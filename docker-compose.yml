@@ -1,0 +1,87 @@
+# ─────────────────────────────────────────────
+# Docker Compose — URL Shortener (Development)
+# ─────────────────────────────────────────────
+# Defines 3 services that work together:
+#   1. web    — Django app (your code)
+#   2. db     — PostgreSQL 15 (stores URLs, users, clicks)
+#   3. redis  — Redis 7 (caches short_code → original_url mappings)
+#
+# Run with: docker compose up --build
+# Stop with: docker compose down
+# Nuke everything (including DB data): docker compose down -v
+
+services:
+
+  # ───────────────────────────────────────────
+  # Frontend Application (React + Vite)
+  # ───────────────────────────────────────────
+  frontend:
+    build: ./frontend
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Avoid overwriting node_modules
+    ports:
+      - "5173:5173" # Vite's default port
+    depends_on:
+      - web # Wait for Django to start
+
+  # ───────────────────────────────────────────
+  # Django Web Application
+  # ───────────────────────────────────────────
+  web:
+    build: . # Build image using ./Dockerfile
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./app:/app # Mount local code → live reload
+    ports:
+      - "8000:8000" # host:container — visit http://localhost:8000
+    env_file:
+      - .env # Load environment variables
+    depends_on:
+      - db # Wait for PostgreSQL to start first
+      - redis # Wait for Redis to start first
+
+  # ───────────────────────────────────────────
+  # Celery Worker (Async Tasks)
+  # ───────────────────────────────────────────
+  celery:
+    build: .
+    command: celery -A config worker -l INFO
+    volumes:
+      - ./app:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+  # ───────────────────────────────────────────
+  # PostgreSQL Database
+  # ───────────────────────────────────────────
+  db:
+    image: postgres:15-alpine # Lightweight PostgreSQL 15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist data across restarts
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB} # Read from .env
+      POSTGRES_USER: ${POSTGRES_USER} # Read from .env
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Read from .env
+    ports:
+      - "5432:5432" # Expose for tools like pgAdmin (optional)
+
+  # ───────────────────────────────────────────
+  # Redis Cache
+  # ───────────────────────────────────────────
+  redis:
+    image: redis:7-alpine # Lightweight Redis 7
+    ports:
+      - "6379:6379" # Expose for debugging with redis-cli (optional)
+
+# ─────────────────────────────────────────────
+# Named volumes — persist data when containers restart
+# ─────────────────────────────────────────────
+# Without this, PostgreSQL data would be lost every time
+# you run 'docker compose down'.
+volumes:
+  postgres_data:
