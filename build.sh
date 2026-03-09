@@ -2,33 +2,50 @@
 # exit on error
 set -o errexit
 
-# Force production settings so Django connects to Supabase, not Docker's "db"
+# Force production settings
 export DJANGO_SETTINGS_MODULE=config.settings.production
 
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Debug: show how Python parses the DATABASE_URL
-echo "==> DEBUG: Parsing DATABASE_URL..."
+# Debug: test the EXACT database connection values
+echo "==> DEBUG: Testing database connection..."
 python3 -c "
 import os
-from urllib.parse import urlparse, unquote
-url = os.getenv('DATABASE_URL', '')
-if url:
-    p = urlparse(url)
-    print(f'  scheme:   {p.scheme}')
-    print(f'  username: {p.username}')
-    print(f'  password: {\"***\" if p.password else \"NONE\"}')
-    print(f'  hostname: {p.hostname}')
-    print(f'  port:     {p.port}')
-    print(f'  dbname:   {p.path}')
-else:
-    print('  DATABASE_URL is empty!')
+
+user = os.getenv('POSTGRES_USER', 'shortener_admin').strip()
+password = os.getenv('POSTGRES_PASSWORD', 'shortener_pass_2024').strip()
+host = os.getenv('POSTGRES_HOST', 'db').strip()
+port = os.getenv('POSTGRES_PORT', '5432').strip()
+dbname = os.getenv('POSTGRES_DB', 'url_shortener').strip()
+
+print(f'  USER:     [{user}] (len={len(user)})')
+print(f'  PASSWORD: [{password[:3]}***{password[-3:]}] (len={len(password)})')
+print(f'  HOST:     [{host}] (len={len(host)})')
+print(f'  PORT:     [{port}]')
+print(f'  DBNAME:   [{dbname}]')
+
+# Try to connect directly with psycopg2
+import psycopg2
+try:
+    conn = psycopg2.connect(
+        dbname=dbname,
+        user=user,
+        password=password,
+        host=host,
+        port=port,
+        connect_timeout=10
+    )
+    print('  CONNECTION: SUCCESS!')
+    conn.close()
+except Exception as e:
+    print(f'  CONNECTION FAILED: {e}')
+    raise
 "
 
-# Collect Django static files (admin CSS, etc.)
+# Collect Django static files
 cd app
 python manage.py collectstatic --no-input
 
-# Run database migrations against the cloud database
+# Run database migrations
 python manage.py migrate
