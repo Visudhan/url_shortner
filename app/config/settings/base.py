@@ -118,32 +118,19 @@ WSGI_APPLICATION = "config.wsgi.application"
 # ─────────────────────────────────────────────
 # DATABASE — PostgreSQL
 # ─────────────────────────────────────────────
-# If DATABASE_URL is set (e.g. on Render/cloud), use it directly.
-# Otherwise, fall back to individual env vars (Docker local setup).
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip().strip('"').strip("'")
-if DATABASE_URL and DATABASE_URL.startswith("postgres"):
-    parsed = urlparse(DATABASE_URL)
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": parsed.path.lstrip("/"),
-            "USER": unquote(parsed.username or ""),
-            "PASSWORD": unquote(parsed.password or ""),
-            "HOST": parsed.hostname,
-            "PORT": str(parsed.port or 5432),
-        }
+# Uses individual env vars — same keys work for both Docker and cloud.
+# Docker sets: POSTGRES_HOST=db
+# Render sets: POSTGRES_HOST=aws-1-ap-southeast-1.pooler.supabase.com
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "url_shortener"),
+        "USER": os.getenv("POSTGRES_USER", "shortener_admin"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "shortener_pass_2024"),
+        "HOST": os.getenv("POSTGRES_HOST", "db"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("POSTGRES_DB", "url_shortener"),
-            "USER": os.getenv("POSTGRES_USER", "shortener_admin"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "shortener_pass_2024"),
-            "HOST": os.getenv("POSTGRES_HOST", "db"),
-            "PORT": os.getenv("POSTGRES_PORT", "5432"),
-        }
-    }
+}
 
 
 # ─────────────────────────────────────────────
