@@ -11,7 +11,7 @@ from environment variables via python-dotenv — never hardcoded here.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-import dj_database_url
+from urllib.parse import urlparse, unquote
 
 # ─────────────────────────────────────────────
 # PATH SETUP
@@ -122,8 +122,16 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Otherwise, fall back to individual env vars (Docker local setup).
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip().strip('"').strip("'")
 if DATABASE_URL and DATABASE_URL.startswith("postgres"):
+    parsed = urlparse(DATABASE_URL)
     DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL)
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": parsed.path.lstrip("/"),
+            "USER": unquote(parsed.username or ""),
+            "PASSWORD": unquote(parsed.password or ""),
+            "HOST": parsed.hostname,
+            "PORT": str(parsed.port or 5432),
+        }
     }
 else:
     DATABASES = {
