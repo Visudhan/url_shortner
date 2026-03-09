@@ -29,8 +29,8 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 # ─────────────────────────────────────────────
 # dj-database-url converts the single DATABASE_URL string
 # into the dict Django expects (ENGINE, NAME, USER, etc.)
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip().strip('"').strip("'")
+if DATABASE_URL and DATABASE_URL.startswith("postgres"):
     DATABASES = {
         "default": dj_database_url.parse(DATABASE_URL)
     }
