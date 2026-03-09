@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 
     # Third-party apps
     "rest_framework",       # Django REST Framework — builds our API
+    "corsheaders",          # CORS support for frontend
 
     # Our apps
     "users",                # Custom user model with UUID + API key
@@ -70,6 +71,8 @@ AUTH_USER_MODEL = "users.User"
 # Middleware runs on every request/response — order matters!
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",        # HTTPS redirects, HSTS
+    "whitenoise.middleware.WhiteNoiseMiddleware",            # Serve static files in production
+    "corsheaders.middleware.CorsMiddleware",                # CORS for React frontend
     "django.contrib.sessions.middleware.SessionMiddleware",  # Session handling
     "django.middleware.common.CommonMiddleware",             # URL normalization
     "django.middleware.csrf.CsrfViewMiddleware",            # CSRF protection
@@ -180,6 +183,7 @@ USE_TZ = True
 # STATIC FILES
 # ─────────────────────────────────────────────
 STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 
 # ─────────────────────────────────────────────

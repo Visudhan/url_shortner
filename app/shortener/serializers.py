@@ -20,6 +20,7 @@ What is a Serializer?
 
 from rest_framework import serializers
 from shortener.models import URL
+import os
 
 
 class URLSerializer(serializers.ModelSerializer):
@@ -81,9 +82,8 @@ class URLSerializer(serializers.ModelSerializer):
         """
         code = obj.effective_short_code
         
-        # In production this would come from settings.DOMAIN or .env
-        # For development, we hardcode the known public port setup
-        base_url = "http://localhost:8000"
+        # Reads from env: defaults to localhost for dev, set to your Render URL in prod
+        base_url = os.getenv("BASE_URL", "http://localhost:8000")
         
         return f"{base_url}/{code}"
 
