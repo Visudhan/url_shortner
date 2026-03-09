@@ -2,6 +2,9 @@
 # exit on error
 set -o errexit
 
+# Force production settings so Django connects to Supabase, not Docker's "db"
+export DJANGO_SETTINGS_MODULE=config.settings.production
+
 # Install Python dependencies
 pip install -r requirements.txt
 
