@@ -11,6 +11,7 @@ from environment variables via python-dotenv — never hardcoded here.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 # ─────────────────────────────────────────────
 # PATH SETUP
@@ -117,19 +118,24 @@ WSGI_APPLICATION = "config.wsgi.application"
 # ─────────────────────────────────────────────
 # DATABASE — PostgreSQL
 # ─────────────────────────────────────────────
-# All values come from .env via os.getenv()
-# Inside Docker: POSTGRES_HOST = "db" (the service name)
-# Outside Docker: you'd set POSTGRES_HOST = "localhost"
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "url_shortener"),
-        "USER": os.getenv("POSTGRES_USER", "shortener_admin"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "shortener_pass_2024"),
-        "HOST": os.getenv("POSTGRES_HOST", "db"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+# If DATABASE_URL is set (e.g. on Render/cloud), use it directly.
+# Otherwise, fall back to individual env vars (Docker local setup).
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip().strip('"').strip("'")
+if DATABASE_URL and DATABASE_URL.startswith("postgres"):
+    DATABASES = {
+        "default": dj_database_url.parse(DATABASE_URL)
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB", "url_shortener"),
+            "USER": os.getenv("POSTGRES_USER", "shortener_admin"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "shortener_pass_2024"),
+            "HOST": os.getenv("POSTGRES_HOST", "db"),
+            "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        }
+    }
 
 
 # ─────────────────────────────────────────────
