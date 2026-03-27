@@ -155,15 +155,19 @@ class RedirectView(APIView):
 
     def _log_click_async(self, request, short_code):
         """Helper to safely enqueue the analytics task without blocking the thread."""
-        ip_addr = self.get_client_ip(request)
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-        referer = request.META.get('HTTP_REFERER', '')
+        try:
+            ip_addr = self.get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            referer = request.META.get('HTTP_REFERER', '')
 
-        # .delay() sends the task to Redis to be picked up by Celery workers
-        log_click_task.delay(
-            short_code=short_code,
-            ip_address=ip_addr,
-            user_agent=user_agent,
-            referer=referer
-        )
+            # .delay() sends the task to Redis to be picked up by Celery workers
+            log_click_task.delay(
+                short_code=short_code,
+                ip_address=ip_addr,
+                user_agent=user_agent,
+                referer=referer
+            )
+        except Exception:
+            # If Redis/Celery is down, silently skip analytics — don't break the redirect
+            pass
 
