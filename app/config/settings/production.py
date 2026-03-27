@@ -21,7 +21,7 @@ DEBUG = False
 # ─────────────────────────────────────────────
 # Set via environment variable, comma-separated.
 # Example: ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
 
 # ─────────────────────────────────────────────
